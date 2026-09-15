@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Simulation logs and outputs
+MUJOCO_LOG.TXT
+results/telemetry.csv
+results/tracking_metrics.png
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,91 @@
+<mujoco model="ackerman_car_2d">
+    <compiler angle="radian" coordinate="local"/>
+
+    <option gravity="0 0 -9.81" timestep="0.01" integrator="implicitfast">
+        <flag frictionloss="enable"/>
+    </option>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
+        <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.2 0.22 0.24" rgb2="0.15 0.16 0.18"/>
+        <material name="grid_mat" texture="grid" texrepeat="50 50" reflectance="0.1"/>
+
+        <material name="chassis_mat" rgba="0.08 0.45 0.85 1.0" specular="0.6" shininess="0.8"/>
+        <material name="hood_mat" rgba="1.0 0.8 0.1 1.0" specular="0.4"/>
+        <material name="wheel_mat" rgba="0.15 0.15 0.15 1.0"/>
+        <material name="axle_mat" rgba="0.6 0.6 0.6 1.0"/>
+    </asset>
+
+    <worldbody>
+        <!-- Ground Plane -->
+        <geom name="floor" type="plane" size="200 200 0.1" material="grid_mat" friction="2.0 0.01 0.01"/>
+
+        <!-- 
+            Vehicle Root Body:
+            Placed at rear-axle center (x=0, y=0, z=0.08).
+            Constrained strictly to 2D planar motion via 3 DoF:
+            - slide_x (translational X)
+            - slide_y (translational Y)
+            - hinge_yaw (rotation about Z)
+            This guarantees 2D motion with zero roll, pitch, or vertical bounce.
+        -->
+        <body name="chassis" pos="0 0 0.08">
+            <joint name="slide_x" type="slide" axis="1 0 0" damping="0.1"/>
+            <joint name="slide_y" type="slide" axis="0 1 0" damping="0.1"/>
+            <joint name="hinge_yaw" type="hinge" axis="0 0 1" damping="0.5"/>
+
+            <!-- Main Chassis Box (wheelbase L=0.5m, center at x=0.25) -->
+            <geom name="chassis_body" type="box" pos="0.25 0 0.05" size="0.32 0.16 0.04" material="chassis_mat" mass="12.0"/>
+            <!-- Front hood direction marker (points towards positive X) -->
+            <geom name="hood_marker" type="box" pos="0.45 0 0.092" size="0.08 0.05 0.005" material="hood_mat" mass="0.1"/>
+            <!-- Roof / Cockpit -->
+            <geom name="cabin" type="box" pos="0.20 0 0.12" size="0.15 0.12 0.035" rgba="0.2 0.25 0.35 0.8" mass="2.0"/>
+
+            <!-- Rear Axle Rod -->
+            <geom name="rear_axle" type="cylinder" pos="0 0 0" size="0.015 0.18" zaxis="0 1 0" material="axle_mat" mass="0.5"/>
+
+            <!-- Rear Left Wheel -->
+            <body name="rear_left_wheel" pos="0 0.20 0">
+                <joint name="rear_left_roll" type="hinge" axis="0 1 0" damping="0.02"/>
+                <geom name="rl_geom" type="cylinder" size="0.08 0.03" zaxis="0 1 0" material="wheel_mat" friction="2.0 0.01 0.01" mass="1.0"/>
+            </body>
+
+            <!-- Rear Right Wheel -->
+            <body name="rear_right_wheel" pos="0 -0.20 0">
+                <joint name="rear_right_roll" type="hinge" axis="0 1 0" damping="0.02"/>
+                <geom name="rr_geom" type="cylinder" size="0.08 0.03" zaxis="0 1 0" material="wheel_mat" friction="2.0 0.01 0.01" mass="1.0"/>
+            </body>
+
+            <!-- 
+                Front Steering Assembly (at wheelbase distance L = 0.50m):
+                Rotates around Z-axis by steering angle delta.
+            -->
+            <body name="front_steer_assembly" pos="0.50 0 0">
+                <joint name="steer_joint" type="hinge" axis="0 0 1" range="-0.6 0.6" limited="true" damping="1.5"/>
+                <!-- Front Axle Rod -->
+                <geom name="front_axle" type="cylinder" pos="0 0 0" size="0.015 0.18" zaxis="0 1 0" material="axle_mat" mass="0.5"/>
+
+                <!-- Front Left Wheel -->
+                <body name="front_left_wheel" pos="0 0.20 0">
+                    <joint name="front_left_roll" type="hinge" axis="0 1 0" damping="0.02"/>
+                    <geom name="fl_geom" type="cylinder" size="0.08 0.03" zaxis="0 1 0" material="wheel_mat" friction="2.0 0.01 0.01" mass="1.0"/>
+                </body>
+
+                <!-- Front Right Wheel -->
+                <body name="front_right_wheel" pos="0 -0.20 0">
+                    <joint name="front_right_roll" type="hinge" axis="0 1 0" damping="0.02"/>
+                    <geom name="fr_geom" type="cylinder" size="0.08 0.03" zaxis="0 1 0" material="wheel_mat" friction="2.0 0.01 0.01" mass="1.0"/>
+                </body>
+            </body>
+
+            <!-- Tracking Cameras -->
+            <camera name="chase_cam" pos="-2.5 0 1.5" xyaxes="0 -1 0 0.5 0 1" mode="trackcom"/>
+            <camera name="top_cam" pos="0.25 0 8.0" xyaxes="0 -1 0 1 0 0" mode="trackcom"/>
+        </body>
+    </worldbody>
+
+    <!-- Actuators: Servo position steering -->
+    <actuator>
+        <position name="steer_actuator" joint="steer_joint" kp="250" kv="25" ctrlrange="-0.6 0.6"/>
+    </actuator>
+</mujoco>
